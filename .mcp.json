@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "the-roofing-list": {
+      "type": "http",
+      "url": "https://mcp.theroofinglist.com/mcp"
+    }
+  }
+}

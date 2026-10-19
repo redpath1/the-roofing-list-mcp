@@ -28,6 +28,8 @@ Claude Desktop: add this to `claude_desktop_config.json`. It uses `mcp-remote`, 
 
 Any other MCP client: connect to `https://mcp.theroofinglist.com/mcp` with Streamable HTTP.
 
+Connect from any agent: [`.mcp.json`](.mcp.json) at the root of this repo holds the server entry. Claude Code reads it when you open this repo. For any other client, copy the entry into that client's MCP config.
+
 ### The data rules
 
 - Only listed, open firms leave this server. Closed or unlisted rows are dropped, even when the data source sends them.
