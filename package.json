@@ -1,0 +1,31 @@
+{
+  "name": "theroofinglist-mcp",
+  "type": "module",
+  "description": "The Roofing List: read-only remote MCP server (search_contractors, get_contractor)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/redpath1/the-roofing-list-mcp.git"
+  },
+  "homepage": "https://theroofinglist.com/mcp/",
+  "scripts": {
+    "dev": "test -f .dev.vars || cp .dev.vars.example .dev.vars; wrangler dev -c wrangler.jsonc -c stub/wrangler.jsonc",
+    "dev:real": "wrangler dev -c wrangler.jsonc",
+    "smoke": "node scripts/smoke.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "2.0.0",
+    "agents": "0.26.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "0.22.0",
+    "@cloudflare/workers-types": "5.20260929.1",
+    "@modelcontextprotocol/client": "2.0.0",
+    "typescript": "5.9.3",
+    "vitest": "4.1.11",
+    "wrangler": "4.147.0"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  // A local stand-in for theroofinglist-web's internal MCP route.
+  // `pnpm dev` runs it next to the MCP Worker so the WEB service binding resolves.
+  // Never deploy this.
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "theroofinglist-web",
+  "main": "worker.ts",
+  "compatibility_date": "2026-09-29",
+  "vars": { "INTERNAL_API_TOKEN": "local-dev-token" }
+}

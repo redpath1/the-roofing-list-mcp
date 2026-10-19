@@ -1,0 +1,18 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.redpath1/the-roofing-list",
+  "title": "The Roofing List",
+  "description": "Find checked US roofers, siding and gutter contractors by city. Read-only, no login.",
+  "version": "0.1.1",
+  "websiteUrl": "https://theroofinglist.com/mcp/",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.theroofinglist.com/mcp"
+    }
+  ],
+  "repository": {
+    "url": "https://github.com/redpath1/the-roofing-list-mcp",
+    "source": "github"
+  }
+}

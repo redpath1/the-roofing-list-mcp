@@ -1,0 +1,38 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "theroofinglist-mcp",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-29",
+  "compatibility_flags": ["nodejs_compat"],
+  // Public origin used in profile URLs. No trailing slash.
+  "vars": {
+    "SITE_URL": "https://theroofinglist.com",
+    // Host header check (DNS rebinding guard). Comma-separated. The local
+    // names keep `pnpm dev` and `wrangler dev` working.
+    "ALLOWED_HOSTNAMES": "mcp.theroofinglist.com,theroofinglist-mcp.evans-keith.workers.dev,localhost,127.0.0.1"
+  },
+  "routes": [
+    { "pattern": "mcp.theroofinglist.com", "custom_domain": true }
+  ],
+  // Reads go through the web Worker (Payload local API) over a service binding.
+  // Local dev: `pnpm dev` runs the stub in stub/ under the same name.
+  "services": [
+    { "binding": "WEB", "service": "theroofinglist-web" }
+  ],
+  // Per-IP limit. Period must be 10 or 60 seconds.
+  // namespace_id is a number you pick, unique within the account.
+  "ratelimits": [
+    {
+      "name": "RATE_LIMITER",
+      "namespace_id": "4101",
+      "simple": { "limit": 60, "period": 60 }
+    }
+  ],
+  "observability": {
+    // Workers Logs. Every request is logged (rate 1); Workers Paid includes
+    // 20M log events a month. Lower head_sampling_rate if traffic outgrows it.
+    "enabled": true,
+    "head_sampling_rate": 1,
+    "logs": { "enabled": true, "invocation_logs": true }
+  }
+}
