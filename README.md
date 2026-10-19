@@ -159,11 +159,15 @@ The directory page on theroofinglist.com already marks this server as in the off
 
 ## Public repository
 
-https://github.com/redpath1/the-roofing-list-mcp is the published copy of the `mcp/` folder in the private monorepo of The Roofing List. Develop in the monorepo. After a change to `mcp/` merges to `main` there, run this from the monorepo root:
+https://github.com/redpath1/the-roofing-list-mcp is the published copy of the `mcp/` folder in the private monorepo of The Roofing List. Develop in the monorepo. The public repo has its own short history, so do not use `git subtree push`: that would push the monorepo's commit history, with its author emails, to the public repo. After a change to `mcp/` merges to `main`, copy the files instead:
 
 ```bash
-git subtree push --prefix=mcp https://github.com/redpath1/the-roofing-list-mcp main
+git clone https://github.com/redpath1/the-roofing-list-mcp /tmp/trl-mcp
+rsync -a --delete --exclude .git --exclude node_modules --exclude .wrangler --exclude .dev.vars mcp/ /tmp/trl-mcp/
+cd /tmp/trl-mcp && git add -A && git commit -m "<what changed>" && git push
 ```
+
+Commit as `Keith Evans <272994924+redpath1@users.noreply.github.com>`. No personal email goes into the public history.
 
 ## Contributing
 
