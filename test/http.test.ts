@@ -64,24 +64,29 @@ describe('rate limit', () => {
       }),
     )
     expect(pre.status).not.toBe(429)
-    expect((await fetch('http://localhost/')).status).toBe(301)
+    expect((await fetch(new Request('http://localhost/', { headers: { accept: 'text/html' } }))).status).toBe(301)
     expect((await fetch('http://localhost/nope')).status).toBe(404)
     expect(limiter.keys).toEqual([])
   })
 })
 
 describe('root path', () => {
-  it('sends GET and HEAD on / to the about page on the main domain with a 301', async () => {
+  it('sends a browser GET or HEAD on / to the about page on the main domain with a 301', async () => {
     const fetch = appFetch()
     for (const method of ['GET', 'HEAD']) {
-      const res = await fetch(new Request('http://localhost/', { method, redirect: 'manual' }))
+      const res = await fetch(
+        new Request('http://localhost/', { method, redirect: 'manual', headers: { accept: 'text/html,*/*' } }),
+      )
       expect(res.status).toBe(301)
       expect(res.headers.get('location')).toBe(`${SITE}/mcp/`)
     }
   })
 
-  it('keeps the plain-text answer for other methods on /, and 404 elsewhere', async () => {
+  it('keeps the plain-text answer for API clients and other methods on /, and 404 elsewhere', async () => {
     const fetch = appFetch()
+    const plain = await fetch('http://localhost/')
+    expect(plain.status).toBe(200)
+    expect(await plain.text()).toContain('/v1/contractors')
     expect((await fetch(new Request('http://localhost/', { method: 'POST' }))).status).toBe(200)
     expect((await fetch('http://localhost/mcp/')).status).toBe(404)
   })

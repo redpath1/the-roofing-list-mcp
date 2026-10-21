@@ -40,11 +40,12 @@ export const fixedDirectory = (rows: InternalContractor[]): Directory => ({
 
 const ctx = { waitUntil() {}, passThroughOnException() {}, props: {} } as unknown as ExecutionContext
 
-export function appFetch(opts: { directory?: Directory; limiter?: Limiter } = {}) {
+export function appFetch(opts: { directory?: Directory; limiter?: Limiter; rapidApiProxySecret?: string } = {}) {
   const app = createApp({
     directory: opts.directory ?? serviceBindingDirectory(stubWeb(), TOKEN),
     limiter: opts.limiter ?? allowAll,
     siteUrl: SITE,
+    rapidApiProxySecret: opts.rapidApiProxySecret,
   })
   return (input: RequestInfo | URL, init?: RequestInit) => {
     const req = new Request(input, init)

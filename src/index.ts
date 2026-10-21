@@ -1,6 +1,7 @@
 /**
  * theroofinglist-mcp: a public, read-only, stateless MCP server over
- * Streamable HTTP at /mcp. No login. Rate-limited per IP.
+ * Streamable HTTP at /mcp, plus a small REST API at /v1/*. No login.
+ * Rate-limited per IP, or per RapidAPI user for RapidAPI traffic.
  *
  * Only the default handler is exported: workerd treats every named export
  * of the main module as an entrypoint.
@@ -19,6 +20,7 @@ export default {
       limiter: env.RATE_LIMITER,
       siteUrl: env.SITE_URL,
       allowedHostnames: env.ALLOWED_HOSTNAMES?.split(',').map((h) => h.trim()).filter(Boolean),
+      rapidApiProxySecret: env.RAPIDAPI_PROXY_SECRET,
     })
     return app(request, env, ctx)
   },

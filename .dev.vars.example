@@ -1,2 +1,7 @@
 # Local only. Copy to .dev.vars. Must match stub/wrangler.jsonc.
 INTERNAL_API_TOKEN=local-dev-token
+
+# Optional. The proxy secret from the RapidAPI provider dashboard. In
+# production, set it with `wrangler secret put RAPIDAPI_PROXY_SECRET`.
+# Leave it empty locally: the rate limit then counts per IP.
+RAPIDAPI_PROXY_SECRET=

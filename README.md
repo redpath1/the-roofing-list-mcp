@@ -46,6 +46,35 @@ The rules live in `src/present.ts`. The tests in `test/tools.test.ts` prove them
 - Stateless: `createMcpHandler` from `agents/mcp/server` builds a new `McpServer` for each request. No Durable Objects. Cloudflare marks `McpAgent` as the older path for new stateless servers.
 - Protocol: the MCP SDK v2 serves the 2026-07-28 spec. It also answers 2025-era clients through its stateless fallback.
 
+## REST API
+
+The same Worker also serves a small REST API, for RapidAPI and for people who do not use MCP. It is read-only, free and needs no key. It calls the same lookups as the MCP tools (`src/lookup.ts`), so both return the same records.
+
+| Route | Returns |
+| --- | --- |
+| `GET /v1/contractors?trade=&city=&state=&limit=` | `{ "contractors": Contractor[] }`. Same inputs and limits as `search_contractors`. |
+| `GET /v1/contractors/{id}` | `Contractor`, or `404` for a closed, unlisted or unknown id |
+| `GET /openapi.json` | The OpenAPI 3.1 document (`openapi.json` in this folder) |
+
+```bash
+curl 'https://mcp.theroofinglist.com/v1/contractors?trade=roofing&city=Austin&state=TX&limit=5'
+curl 'https://mcp.theroofinglist.com/v1/contractors/101'
+```
+
+- Errors are `{ "error": "..." }`: `400` bad input (same messages as the tools), `404`, `405` for any method but GET, `429` over the rate limit (with `Retry-After: 60`), `503` when the web Worker fails.
+- Every response has `access-control-allow-origin: *`. `OPTIONS` answers the CORS preflight.
+- Cache: `public, max-age=300` on `200`, `400`, `404` and `405`. `no-store` on `429` and `503`, so no cache keeps a short-lived error. `/openapi.json` caches for 1 hour.
+- `openapi.json` is the one source for the document. `src/openapi.ts` imports it. When you raise `SERVER_VERSION`, raise `info.version` too; a test checks that they match.
+
+### RapidAPI and the rate limit
+
+All RapidAPI calls come from RapidAPI's servers. A per-IP limit would count all RapidAPI users as one caller. So:
+
+- Set the proxy secret from the RapidAPI provider dashboard as a Worker secret: `pnpm exec wrangler secret put RAPIDAPI_PROXY_SECRET`. It is optional. Locally, leave it empty in `.dev.vars`.
+- When a request carries that secret in `x-rapidapi-proxy-secret`, the key is `rapidapi:<x-rapidapi-user>`. Without the user header, the key falls back to the IP.
+- A missing or wrong secret means the key is the IP. A caller cannot pick a key by sending a fake `x-rapidapi-user`. The compare is constant-time.
+- REST and MCP keep separate budgets on the same binding: keys start with `rest:` or `mcp:`. Each gets 60 calls a minute. `/openapi.json` and `OPTIONS` do not count.
+
 ## Tools
 
 | Tool | Input | Returns |
@@ -124,7 +153,7 @@ Contractor = {
 
 ## Rate limit
 
-`RATE_LIMITER` is a Workers rate limiting binding: 60 requests per IP per 60 seconds, keyed on `cf-connecting-ip`. Over the limit, `/mcp` returns `429` with `Retry-After: 60` and a JSON-RPC error. The binding counts per Cloudflare location and is eventually consistent, so it stops abuse, not exact overuse.
+`RATE_LIMITER` is a Workers rate limiting binding: 60 requests per IP per 60 seconds, keyed on `cf-connecting-ip`. Over the limit, `/mcp` returns `429` with `Retry-After: 60` and a JSON-RPC error. For RapidAPI traffic the key is the RapidAPI user; see "RapidAPI and the rate limit" above. The binding counts per Cloudflare location and is eventually consistent, so it stops abuse, not exact overuse.
 
 ## Production
 

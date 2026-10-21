@@ -1,0 +1,306 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "The Roofing List API",
+    "version": "0.1.1",
+    "summary": "Find roofing, siding and gutter contractors in US cities.",
+    "description": "A read-only API for The Roofing List, a directory of US roofing, siding and gutter contractors.\n\n- It is free. You do not need a key.\n- It lists only open businesses that passed our contact check.\n- Ratings come from reviews published on The Roofing List only. They never come from Google or other sites.\n- A search returns 25 results at most.\n- Calls are rate-limited. Over the limit, you get HTTP 429 and a `Retry-After` header.\n\n## Quick start\n\n```bash\ncurl 'https://mcp.theroofinglist.com/v1/contractors?trade=roofing&city=Austin&state=TX&limit=5'\n```\n\nThe same data is also available to AI agents as an MCP server at `https://mcp.theroofinglist.com/mcp`.",
+    "termsOfService": "https://theroofinglist.com/terms/",
+    "contact": {
+      "name": "The Roofing List",
+      "email": "support@theroofinglist.com",
+      "url": "https://theroofinglist.com/mcp/"
+    },
+    "license": {
+      "name": "MIT",
+      "identifier": "MIT"
+    }
+  },
+  "servers": [{ "url": "https://mcp.theroofinglist.com" }],
+  "tags": [{ "name": "Contractors", "description": "Search and read contractor listings." }],
+  "paths": {
+    "/v1/contractors": {
+      "get": {
+        "operationId": "searchContractors",
+        "tags": ["Contractors"],
+        "summary": "Search contractors in a city",
+        "description": "Find roofing, siding or gutter contractors in a US city. Returns only listed businesses that are open and passed our contact check. Ratings come from reviews published on The Roofing List only.",
+        "parameters": [
+          {
+            "name": "trade",
+            "in": "query",
+            "required": true,
+            "description": "The trade: roofing, siding or gutters.",
+            "schema": { "type": "string", "enum": ["roofing", "siding", "gutters"] },
+            "example": "roofing"
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "required": true,
+            "description": "US city name, for example \"Austin\".",
+            "schema": { "type": "string", "minLength": 1, "maxLength": 80 },
+            "example": "Austin"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": true,
+            "description": "US state as a USPS code (\"TX\") or a full name (\"Texas\").",
+            "schema": { "type": "string", "minLength": 2, "maxLength": 40 },
+            "example": "TX"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "How many results, 1 to 25. Default 10.",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 25, "default": 10 },
+            "example": 10
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The contractors that match. The list is empty when none match.",
+            "headers": { "Cache-Control": { "$ref": "#/components/headers/CacheControl" } },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ContractorList" },
+                "examples": {
+                  "austinRoofers": {
+                    "summary": "Roofers in Austin, Texas",
+                    "value": {
+                      "contractors": [
+                        {
+                          "id": 101,
+                          "name": "Lone Star Roofing",
+                          "trades": ["roofing", "gutters"],
+                          "city": "Austin",
+                          "state": "TX",
+                          "phone": "+15125550101",
+                          "profileUrl": "https://theroofinglist.com/roofers/texas/austin/lone-star-roofing",
+                          "claimed": true,
+                          "website": "https://lonestarroofing.example.com",
+                          "rating": { "value": 4.7, "count": 12 }
+                        },
+                        {
+                          "id": 102,
+                          "name": "Hill Country Roof & Gutter",
+                          "trades": ["roofing"],
+                          "city": "Austin",
+                          "state": "TX",
+                          "phone": "+15125550102",
+                          "profileUrl": "https://theroofinglist.com/roofers/texas/austin/hill-country-roof-gutter",
+                          "claimed": false
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid: an unknown state, a city that is not a name, an unknown trade, or a limit out of range.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" },
+                "examples": {
+                  "unknownState": {
+                    "summary": "Unknown state",
+                    "value": { "error": "Unknown US state \"Narnia\". Use a USPS code like \"TX\" or a name like \"Texas\"." }
+                  },
+                  "badLimit": {
+                    "summary": "Limit out of range",
+                    "value": { "error": "Invalid input: limit: Too big: expected number to be <=25" }
+                  }
+                }
+              }
+            }
+          },
+          "405": { "$ref": "#/components/responses/MethodNotAllowed" },
+          "429": { "$ref": "#/components/responses/RateLimited" },
+          "503": { "$ref": "#/components/responses/Unavailable" }
+        }
+      }
+    },
+    "/v1/contractors/{id}": {
+      "get": {
+        "operationId": "getContractor",
+        "tags": ["Contractors"],
+        "summary": "Get one contractor by id",
+        "description": "Get one contractor by the id from a search. A business that is closed or no longer listed returns 404.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The contractor id from a search.",
+            "schema": { "type": "integer", "minimum": 1 },
+            "example": 101
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The contractor.",
+            "headers": { "Cache-Control": { "$ref": "#/components/headers/CacheControl" } },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PublicContractor" },
+                "examples": {
+                  "claimed": {
+                    "summary": "A claimed profile with ratings",
+                    "value": {
+                      "id": 101,
+                      "name": "Lone Star Roofing",
+                      "trades": ["roofing", "gutters"],
+                      "city": "Austin",
+                      "state": "TX",
+                      "phone": "+15125550101",
+                      "profileUrl": "https://theroofinglist.com/roofers/texas/austin/lone-star-roofing",
+                      "claimed": true,
+                      "website": "https://lonestarroofing.example.com",
+                      "rating": { "value": 4.7, "count": 12 }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The id is not a positive whole number.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" },
+                "examples": {
+                  "badId": {
+                    "summary": "Not a number",
+                    "value": { "error": "Invalid input: id: Invalid input: expected number, received string" }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No listed contractor has this id. The business may be closed or no longer listed.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" },
+                "examples": {
+                  "notFound": { "summary": "Not listed", "value": { "error": "No listed contractor with id 999." } }
+                }
+              }
+            }
+          },
+          "405": { "$ref": "#/components/responses/MethodNotAllowed" },
+          "429": { "$ref": "#/components/responses/RateLimited" },
+          "503": { "$ref": "#/components/responses/Unavailable" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PublicContractor": {
+        "type": "object",
+        "description": "A listed, open contractor. Only these fields leave the API.",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "The contractor id. Use it with getContractor."
+          },
+          "name": { "type": "string", "description": "The business name." },
+          "trades": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["roofing", "siding", "gutters"] },
+            "description": "The trades the business works in."
+          },
+          "city": { "type": "string", "description": "The main location's city, for example \"Austin\"." },
+          "state": { "type": "string", "description": "The main location's USPS state code, for example \"TX\"." },
+          "phone": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "description": "The phone number in E.164 form, or null."
+          },
+          "profileUrl": { "type": "string", "description": "The profile page on theroofinglist.com." },
+          "claimed": { "type": "boolean", "description": "True when the business has claimed its profile." },
+          "website": { "description": "Only present for claimed profiles.", "type": "string" },
+          "rating": {
+            "description": "From reviews published on The Roofing List only. Absent when there are none.",
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": "number",
+                "description": "Average of published reviews on The Roofing List, 1 to 5."
+              },
+              "count": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "How many published reviews."
+              }
+            },
+            "required": ["value", "count"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["id", "name", "trades", "city", "state", "phone", "profileUrl", "claimed"],
+        "additionalProperties": false
+      },
+      "ContractorList": {
+        "type": "object",
+        "properties": {
+          "contractors": { "type": "array", "items": { "$ref": "#/components/schemas/PublicContractor" } }
+        },
+        "required": ["contractors"],
+        "additionalProperties": false
+      },
+      "Error": {
+        "type": "object",
+        "properties": { "error": { "type": "string", "description": "What went wrong, in plain English." } },
+        "required": ["error"]
+      }
+    },
+    "headers": {
+      "CacheControl": {
+        "description": "Successful responses may be cached for 5 minutes.",
+        "schema": { "type": "string", "examples": ["public, max-age=300"] }
+      },
+      "RetryAfter": {
+        "description": "Seconds to wait before the next call.",
+        "schema": { "type": "integer", "examples": [60] }
+      }
+    },
+    "responses": {
+      "MethodNotAllowed": {
+        "description": "Only GET is allowed.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "example": { "error": "Method not allowed. Use GET." }
+          }
+        }
+      },
+      "RateLimited": {
+        "description": "Too many calls. Wait for the Retry-After seconds, then try again.",
+        "headers": { "Retry-After": { "$ref": "#/components/headers/RetryAfter" } },
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "example": { "error": "Rate limit exceeded. Try again in a minute." }
+          }
+        }
+      },
+      "Unavailable": {
+        "description": "The directory is not available right now.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "example": { "error": "The directory is not available right now. Try again soon." }
+          }
+        }
+      }
+    }
+  }
+}
